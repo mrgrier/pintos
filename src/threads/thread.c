@@ -587,9 +587,10 @@ allocate_tid (void)
   return tid;
 }
 
-bool compare_ticks(struct list_elem* a,
-                   struct list_elem* b,
-                   void* aux UNUSED)
+bool 
+compare_ticks(struct list_elem* a,
+              struct list_elem* b,
+              void* aux UNUSED)
 {
   struct thread* left = list_entry(a, struct thread, elem);
   struct thread* right = list_entry(b, struct thread, elem);
@@ -597,9 +598,10 @@ bool compare_ticks(struct list_elem* a,
   return left->ticks < right->ticks;
 }
 
-bool compare_priority(struct list_elem* a,
-                      struct list_elem* b,
-                      void* aux)
+bool 
+compare_priority(struct list_elem* a,
+                 struct list_elem* b,
+                 void* aux UNUSED)
 {
   struct thread* left = list_entry(a, struct thread, elem);
   struct thread* right = list_entry(b, struct thread, elem);

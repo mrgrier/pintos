@@ -199,10 +199,13 @@ timer_interrupt (struct intr_frame *args UNUSED)
   while(!list_empty(&sleeping_threads_list))
   {
     nextThread = list_entry(front, struct thread, elem);
-
-    list_pop_front(&sleeping_threads_list);
-    thread_unblock(nextThread);
-    front = list_begin(&sleeping_threads_list);
+    
+    if(ticks > nextThread->ticks)
+    {
+      list_pop_front(&sleeping_threads_list);
+      thread_unblock(nextThread);
+      front = list_begin(&sleeping_threads_list);
+    }
   }
 }
 
