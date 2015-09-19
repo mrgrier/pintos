@@ -29,8 +29,11 @@ Adam Seiwert seiwerta@k-state.edu
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
-static struct list sleeping_threads_list;
-A list of the sleeping threads.
+struct thread was changed to include an int64_t called sleep_ticks
+-This is the ammount of ticks that the thread needs to sleep
+
+ 
+
 
 
 ---- ALGORITHMS ----
