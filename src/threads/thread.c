@@ -338,8 +338,18 @@ thread_foreach (thread_action_func *func, void *aux)
     }
 }
 
+/* Returns true if thread a has lower priority than thread b, within a list of threads. Taken from Project1SessionA.pdf from KSOL*/ 
+bool thread_lower_priority (const struct list_elem *a_,
+                            const struct list_elem *b_, 
+                            void *aux UNUSED)
+{ 
+  const struct thread *a = list_entry (a_, struct thread, elem); 
+  const struct thread *b = list_entry (b_, struct thread, elem);
+  
+  return a->priority < b->priority; 
+}
 
-/* If the ready list contains a thread with a higher priority, yields to it. Function taken Project1SessionA.pdf from KSOL*/ 
+/* If the ready list contains a thread with a higher priority, yields to it. Function taken from Project1SessionA.pdf from KSOL*/ 
 void thread_yield_to_higher_priority (void) 
 { 
   enum intr_level old_level = intr_disable (); 
