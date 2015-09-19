@@ -6,9 +6,9 @@ CIS 520 - Programming Project #1
 
 >> Fill in the names and email addresses of your group members.
 
-FirstName LastName <email@k-state.edu>
-FirstName LastName <email@k-state.edu>
-...
+Montana Grier mrgrier@k-state.edu
+Austin Fangman apfangman@k-state.edu
+Adam Seiwert seiwerta@k-state.edu
 
 ---- PRELIMINARIES ----
 
@@ -28,6 +28,9 @@ FirstName LastName <email@k-state.edu>
 >> A1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
+
+static struct list sleeping_threads_list;
+A list of the sleeping threads.
 
 
 ---- ALGORITHMS ----
