@@ -595,7 +595,7 @@ compare_ticks(struct list_elem* a,
   struct thread* left = list_entry(a, struct thread, elem);
   struct thread* right = list_entry(b, struct thread, elem);
   
-  return left->ticks < right->ticks;
+  return left->sleep_ticks < right->sleep_ticks;
 }
 
 bool 

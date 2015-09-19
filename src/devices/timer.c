@@ -17,8 +17,6 @@
 #error TIMER_FREQ <= 1000 recommended
 #endif
 
-static struct list sleeping_threads_list;
-
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
 
@@ -39,7 +37,6 @@ timer_init (void)
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
-  list_init(&sleeping_threads_list);
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
@@ -92,24 +89,11 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
-  struct thread* current;
-  enum intr_level previous_level;
-  
-  if(ticks < 1)
-    return;
-
   ASSERT(intr_get_level() == INTR_ON);
-    
-  previous_level = intr_disable();
+  enum intr_level previous_level = intr_disable();
 
-  current = thread_current();
-  current->ticks = timer_ticks() + ticks;
-  
-  list_insert_ordered(&sleeping_threads_list,
-                      &current->elem,
-                      (list_less_func*) &compare_ticks,
-                      NULL);
-                
+  thread_current()->sleep_ticks = ticks;
+                  
   thread_block();
   intr_set_level(previous_level);
 }
@@ -184,29 +168,27 @@ timer_print_stats (void)
   printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
 
+/* Attempt to unblock a thread if it has slept long enough. */
+static void
+try_wake_thread(struct thread *t, void *aux UNUSED)
+{
+  if(t->status != THREAD_BLOCKED)
+    return;
+    
+  if(t->sleep_ticks > 0)
+    t->sleep_ticks--;
+    
+  if(t->sleep_ticks == 0)
+    thread_unblock(t);
+}
+
 /* Timer interrupt handler. */
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
-{
-  struct list_elem* front;
-  struct thread* nextThread;
-  
+{ 
   ticks++;
   thread_tick();
-  
-  front = list_begin(&sleeping_threads_list);
-  
-  while(!list_empty(&sleeping_threads_list))
-  {
-    nextThread = list_entry(front, struct thread, elem);
-    
-    if(ticks > nextThread->ticks)
-    {
-      list_pop_front(&sleeping_threads_list);
-      thread_unblock(nextThread);
-      front = list_begin(&sleeping_threads_list);
-    }
-  }
+  thread_foreach((thread_action_func*) try_wake_thread, 0);
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
