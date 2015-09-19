@@ -338,11 +338,31 @@ thread_foreach (thread_action_func *func, void *aux)
     }
 }
 
+
+/* If the ready list contains a thread with a higher priority, yields to it. Function taken Project1SessionA.pdf from KSOL*/ 
+void thread_yield_to_higher_priority (void) 
+{ 
+  enum intr_level old_level = intr_disable (); 
+  if (!list_empty (&ready_list)) {
+    struct thread *cur = thread_current ();
+    struct thread *max = list_entry (list_max (&ready_list, 
+        thread_lower_priority, NULL), struct thread, elem); 
+      if (max->priority > cur->priority) {
+          if (intr_context ()) 
+            intr_yield_on_return (); 
+          else thread_yield ();
+      }
+  } 
+  intr_set_level (old_level); 
+}
+
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
 thread_set_priority (int new_priority) 
 {
   thread_current ()->priority = new_priority;
+  //Yields if there is a thread with a higher priority
+  thread_yield_to_higher_priority();
 }
 
 /* Returns the current thread's priority. */
