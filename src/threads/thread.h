@@ -94,7 +94,7 @@ struct thread
     struct list_elem elem;              /* List element. */
   
     /* used in timer.c */
-    int64_t ticks;
+    int64_t sleep_ticks;
         
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
