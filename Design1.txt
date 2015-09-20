@@ -19,6 +19,9 @@ Adam Seiwert seiwerta@k-state.edu
 >> preparing your submission, other than the Pintos documentation,
 >> course text, lecture notes, and course staff.
 
+We drew inspiration from this github repository for priority scheduling.
+https://github.com/ryantimwilson/Pintos-Project-1
+
 
                  ALARM CLOCK
                  ===========
@@ -32,35 +35,56 @@ Adam Seiwert seiwerta@k-state.edu
 struct thread was changed to include an int64_t called sleep_ticks
 -This is the ammount of ticks that the thread needs to sleep
 
- 
-
-
+static struct list sleep_list
+-List of threads that have been put to sleep.
 
 ---- ALGORITHMS ----
 
 >> A2: Briefly describe what happens in a call to your timer_sleep(),
 >> including the effects of the timer interrupt handler.
 
+When timer_sleep is called, we disable interrupts to handle the call atomically,
+assign the current threads sleep_ticks member to be the current tick count plus 
+the ticks it needs to sleep for, put a handle to the thread into our sleep_list 
+(which is ordered by ticks low-to-high), and block that thread.
+
+The interrupt handler inspects items in the list of sleeping threads (starting with 
+the thread that will complete soonest), and unblocks threads that have slept long
+enough.
+
 >> A3: What steps are taken to minimize the amount of time spent in
 >> the timer interrupt handler?
 
+The interrupt handler only navigates and evaluates items in the sleep_list
+until no remaining threads are eligible to be unblocked.
 
 ---- SYNCHRONIZATION ----
 
 >> A4: How are race conditions avoided when multiple threads call
 >> timer_sleep() simultaneously?
 
+Interrupts are disabled before work is done in timer_sleep.
 
 >> A5: How are race conditions avoided when a timer interrupt occurs
 >> during a call to timer_sleep()?
 
+Because we have maintained a list of sleeping threads, we do not need to make a 
+call to thread_current().
 
 ---- RATIONALE ----
 
 >> A6: Why did you choose this design?  In what ways is it superior to
 >> other designs that you considered?
 
+This design requires maintaining a list, which is extra overhead. However, because 
+we maintain an order in the list, we do not spend much time sorting or cleaning up
+its contents.
 
+We initially considered an algorithm that used thread_foreach and a helper function
+to evaluate whether each thread in the global all_list had slept for enough ticks.
+
+This caused some threads to unblock when our locks, semaphores, and condition variables
+needed/assumed them to be blocked, causing kernel panics.
 
              PRIORITY SCHEDULING
              ===================
