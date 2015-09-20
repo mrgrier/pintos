@@ -20,6 +20,9 @@
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
 
+/* number of nested donations allowed */
+#define DONATION_DEPTH_LIMIT 8
+
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
@@ -243,7 +246,7 @@ thread_unblock (struct thread *t)
   ASSERT (is_thread (t));
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  
+
   list_insert_ordered(&ready_list,
                       &t->elem,
                       (list_less_func*) compare_priority,
@@ -347,41 +350,80 @@ thread_foreach (thread_action_func *func, void *aux)
     }
 }
 
-/* Returns true if thread a has lower priority than thread b, within a list of threads. Taken from Project1SessionA.pdf from KSOL*/ 
-bool thread_lower_priority (const struct list_elem *a_,
-                            const struct list_elem *b_, 
-                            void *aux UNUSED)
-{ 
-  const struct thread *a = list_entry (a_, struct thread, elem); 
-  const struct thread *b = list_entry (b_, struct thread, elem);
+/* Returns true if thread a has lower priority than thread b, within a list of 
+   threads. Taken from Project1SessionA.pdf from KSOL*/ 
+bool
+compare_priority(struct list_elem* a,
+                 struct list_elem* b,
+                 void* aux UNUSED)
+{
+  struct thread* left = list_entry(a, struct thread, elem);
+  struct thread* right = list_entry(b, struct thread, elem);
   
-  return a->priority < b->priority; 
+  return left->priority < right->priority;
 }
 
-/* If the ready list contains a thread with a higher priority, yields to it. Function taken from Project1SessionA.pdf from KSOL*/ 
-void thread_yield_to_higher_priority (void) 
-{ 
-  enum intr_level old_level = intr_disable (); 
-  if (!list_empty (&ready_list)) {
-    struct thread *cur = thread_current ();
-    struct thread *max = list_entry (list_max (&ready_list, 
-        thread_lower_priority, NULL), struct thread, elem); 
-      if (max->priority > cur->priority) {
-          if (intr_context ()) 
-            intr_yield_on_return (); 
-          else thread_yield ();
-      }
-  } 
-  intr_set_level (old_level); 
+/* If the ready list contains a thread with a higher priority, yields to it. 
+   Function taken from Project1SessionA.pdf from KSOL*/ 
+void 
+thread_yield_to_higher_priority (void) 
+{
+  if(thread_mlfqs || list_empty(&ready_list))
+    return;
+
+  enum intr_level old_level = intr_disable();
+
+  struct thread *cur = thread_current();
+  struct thread *max = list_entry(list_max(&ready_list,
+                                           (list_less_func*) &compare_priority,
+                                           NULL),
+                                  struct thread,
+                                  elem);
+  
+  if(max->priority > cur->priority)
+  {
+      if(intr_context())
+        intr_yield_on_return();
+      else
+        thread_yield();
+  }
+
+  intr_set_level(old_level);
+}
+
+void
+donate_priority(void)
+{
+  int depth = 0;
+  struct thread *t = thread_current();
+  struct lock *l = t->blocking_lock;
+
+  while(l && depth < DONATION_DEPTH_LIMIT)
+  {
+    // if lock is free.
+    if(!l->holder)
+      return;
+
+    /* if the thread holding the lock has the same priority as this thread 
+       waiting on the lock, we have done all we need to. */
+    if(l->holder->priority >= t->priority)
+      return;
+    
+    l->holder->priority = t->priority; // donate our priority.
+    t = l->holder; // set up to check the next "nested" thread.
+    l = t->blocking_lock; // set up to check the next nested lock.
+  }
 }
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
+  thread_current()->priority = new_priority;  
+
   //Yields if there is a thread with a higher priority
   thread_yield_to_higher_priority();
+  // find out if we need to donate priority
 }
 
 /* Returns the current thread's priority. */
@@ -618,17 +660,6 @@ allocate_tid (void)
   lock_release (&tid_lock);
 
   return tid;
-}
-
-bool 
-compare_priority(struct list_elem* a,
-                 struct list_elem* b,
-                 void* aux UNUSED)
-{
-  struct thread* left = list_entry(a, struct thread, elem);
-  struct thread* right = list_entry(b, struct thread, elem);
-  
-  return left->priority > right->priority;
 }
 
 /* Offset of `stack' member within `struct thread'.

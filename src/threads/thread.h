@@ -95,6 +95,11 @@ struct thread
   
     /* used in timer.c */
     int64_t sleep_ticks;
+
+    /* used for priority donations */
+    struct lock *blocking_lock;
+    struct list pending_donations;
+    struct list_elem donation_elem;
         
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -134,9 +139,7 @@ typedef void thread_action_func (struct thread *t, void *aux);
 void thread_foreach (thread_action_func *, void *);
 
 int thread_get_priority (void);
-bool thread_lower_priority (const struct list_elem *,
-                            const struct list_elem *, 
-                            void *);
+
 void thread_yield_to_higher_priority (void);
 
 void thread_set_priority (int);
@@ -145,13 +148,11 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
-
-bool compare_ticks(struct list_elem* a, 
-                   struct list_elem* b,
-                   void* aux);
                    
 bool compare_priority(struct list_elem* a,
                       struct list_elem* b,
                       void* aux);
+
+void donate_priority(void);
 
 #endif /* threads/thread.h */
