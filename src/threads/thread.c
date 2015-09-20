@@ -209,6 +209,10 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
 
+  old_level = intr_disable();
+  yield_to_higher_priority_thread();
+  intr_set_level(old_level);
+
   return tid;
 }
 
