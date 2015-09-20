@@ -181,7 +181,7 @@ try_wake_thread(struct thread *t, void *aux UNUSED)
   if(t->sleep_ticks > 0)
     t->sleep_ticks--;
     
-  if(t->sleep_ticks == 0)
+  if(t->sleep_ticks <= 0)
     thread_unblock(t);
 }
 
