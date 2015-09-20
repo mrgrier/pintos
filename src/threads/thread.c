@@ -391,6 +391,44 @@ thread_yield_to_higher_priority (void)
   intr_set_level(old_level);
 }
 
+/* Sets the current thread's priority to NEW_PRIORITY. */
+void
+thread_set_priority (int new_priority) 
+{
+  enum intr_level previous_level = intr_disable();
+
+  struct thread* current_thread = thread_current();
+
+  int previous_priority = current_thread->priority;
+  current_thread->priority = new_priority;
+
+  take_on_donated_priority(); // update priority from any donor threads.
+
+  // If we have a priority worth donating to other threads blocking us, do that.
+  if(previous_priority < current_thread->priority)
+    donate_priority();
+
+  thread_yield_to_higher_priority(); //Yields if there is a thread with a higher priority
+
+  intr_set_level(previous_level);
+}
+
+void
+take_on_donated_priority(void)
+{
+  struct thread *current = thread_current();
+
+  if(list_empty(&current->priority_donations))
+    return;
+
+  struct thread *donor = list_entry(list_front(&current->priority_donations),
+                                    struct thread,
+                                    donation_elem);
+  
+  if(donor->priority > current->priority)
+    current->priority = donor->priority;
+}
+
 void
 donate_priority(void)
 {
@@ -400,30 +438,20 @@ donate_priority(void)
 
   while(l && depth < DONATION_DEPTH_LIMIT)
   {
-    // if lock is free.
-    if(!l->holder)
+    if(!l->holder) // if lock is free.
       return;
 
-    /* if the thread holding the lock has the same priority as this thread 
-       waiting on the lock, we have done all we need to. */
+    /* If the thread holding the lock has the same priority as this thread 
+       waiting on the lock, we have done all we can to help that thread 
+       hurry up and release the lock we want. */
     if(l->holder->priority >= t->priority)
       return;
     
     l->holder->priority = t->priority; // donate our priority.
     t = l->holder; // set up to check the next "nested" thread.
     l = t->blocking_lock; // set up to check the next nested lock.
+    depth++;
   }
-}
-
-/* Sets the current thread's priority to NEW_PRIORITY. */
-void
-thread_set_priority (int new_priority) 
-{
-  thread_current()->priority = new_priority;  
-
-  //Yields if there is a thread with a higher priority
-  thread_yield_to_higher_priority();
-  // find out if we need to donate priority
 }
 
 /* Returns the current thread's priority. */

@@ -87,7 +87,7 @@ struct thread
     enum thread_status status;          /* Thread state. */
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
-    int priority;                       /* Priority. */
+    int priority;                       /* Priority. */    
     struct list_elem allelem;           /* List element for all threads list. */
 
     /* Shared between thread.c and synch.c. */
@@ -96,9 +96,9 @@ struct thread
     /* used in timer.c */
     int64_t sleep_ticks;
 
-    /* used for priority donations */
+    /* used for priority donations */    
     struct lock *blocking_lock;
-    struct list pending_donations;
+    struct list priority_donations;
     struct list_elem donation_elem;
         
 #ifdef USERPROG
@@ -154,5 +154,6 @@ bool compare_priority(struct list_elem* a,
                       void* aux);
 
 void donate_priority(void);
+void take_on_donated_priority(void);
 
 #endif /* threads/thread.h */
