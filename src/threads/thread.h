@@ -133,7 +133,6 @@ const char *thread_name (void);
 
 void thread_exit (void) NO_RETURN;
 void thread_yield (void);
-void test_max_priority(void);
 
 /* Performs some operation on thread t, given auxiliary data AUX. */
 typedef void thread_action_func (struct thread *t, void *aux);
@@ -155,5 +154,5 @@ bool compare_priority(struct list_elem* a,
                       void* aux);
 
 void donate_priority(void);
-void take_on_donated_priority(void);
+
 #endif /* threads/thread.h */
