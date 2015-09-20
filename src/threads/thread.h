@@ -155,5 +155,6 @@ bool compare_priority(struct list_elem* a,
 
 void donate_priority(void);
 void take_on_donated_priority(void);
+void clean_up_donations_list(struct lock* lock);
 
 #endif /* threads/thread.h */

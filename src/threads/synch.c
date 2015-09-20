@@ -192,6 +192,7 @@ lock_init (struct lock *lock)
 void
 lock_acquire (struct lock *lock)
 {
+  printf("in lock_acquire\n");
   ASSERT (lock != NULL);
   ASSERT (!intr_context());
   ASSERT (!lock_held_by_current_thread(lock));
@@ -244,30 +245,13 @@ lock_try_acquire (struct lock *lock)
 void
 lock_release (struct lock *lock) 
 {
+  printf("in lock_release\n");
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread(lock));
   enum intr_level previous_level = intr_disable();
   lock->holder = NULL;
-
-  struct thread *current_thread = thread_current();
-  struct list_elem *current_elem;
-  struct list_elem *next_elem;
-
-  for(current_elem = list_begin(&current_thread->priority_donations);
-      current_elem != list_end(&current_thread->priority_donations);)
-  {
-    struct thread *donor = list_entry(current_elem,
-                                      struct thread,
-                                      donation_elem);
-
-    next_elem = list_next(current_elem);
-
-    if(donor->blocking_lock == lock)
-      list_remove(current_elem);
-
-    current_elem = next_elem;
-  }
-
+  
+  clean_up_donations_list(lock);
   take_on_donated_priority();
 
   sema_up (&lock->semaphore);
