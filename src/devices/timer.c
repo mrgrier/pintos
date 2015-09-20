@@ -89,7 +89,6 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
-  printf("in timer_sleep\n");
   if(ticks <= 0)
     return;
 
