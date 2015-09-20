@@ -355,6 +355,19 @@ thread_foreach (thread_action_func *func, void *aux)
 /* Returns true if thread a has lower priority than thread b, within a list of 
    threads. Taken from Project1SessionA.pdf from KSOL*/ 
 bool
+compare_ticks(struct list_elem* a,
+              struct list_elem* b,
+              void* aux UNUSED)
+{
+  struct thread* left = list_entry(a, struct thread, elem);
+  struct thread* right = list_entry(b, struct thread, elem);
+  
+  return left->ticks < right->ticks;
+}
+
+/* Returns true if thread a has lower priority than thread b, within a list of 
+   threads. Taken from Project1SessionA.pdf from KSOL*/ 
+bool
 compare_priority(struct list_elem* a,
                  struct list_elem* b,
                  void* aux UNUSED)

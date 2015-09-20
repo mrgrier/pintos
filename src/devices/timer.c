@@ -17,6 +17,9 @@
 #error TIMER_FREQ <= 1000 recommended
 #endif
 
+/* List of processes sleeping */
+static struct list inactive_list;
+
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
 
@@ -37,6 +40,7 @@ timer_init (void)
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
+  list_init(&inactive_list);
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
@@ -89,14 +93,17 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
+  ASSERT(intr_get_level() == INTR_ON);
   if(ticks <= 0)
     return;
 
-  ASSERT(intr_get_level() == INTR_ON);
   enum intr_level previous_level = intr_disable();
 
-  thread_current()->sleep_ticks = ticks;
-                  
+  thread_current()->sleep_ticks = timer_ticks() + ticks;;
+  
+  list_insert_ordered(&inactive_list, &thread_current()->elem,
+          (list_less_func *) &compare_ticks, NULL);          
+
   thread_block();
   intr_set_level(previous_level);
 }
