@@ -664,6 +664,31 @@ allocate_tid (void)
   return tid;
 }
 
+<<<<<<< HEAD
+=======
+bool
+compare_ticks(struct list_elem* a,
+              struct list_elem* b,
+              void* aux UNUSED)
+{
+  struct thread* left = list_entry(a, struct thread, elem);
+  struct thread* right = list_entry(b, struct thread, elem);
+
+  return left->sleep_ticks < right->sleep_ticks;
+}
+
+bool 
+compare_priority(struct list_elem* a,
+                 struct list_elem* b,
+                 void* aux UNUSED)
+{
+  struct thread* left = list_entry(a, struct thread, elem);
+  struct thread* right = list_entry(b, struct thread, elem);
+  
+  return left->priority > right->priority;
+}
+
+>>>>>>> origin/master
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);

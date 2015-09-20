@@ -20,6 +20,8 @@
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
 
+static struct list sleep_list;
+
 /* Number of loops per timer tick.
    Initialized by timer_calibrate(). */
 static unsigned loops_per_tick;
@@ -37,6 +39,7 @@ timer_init (void)
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
+  list_init(&sleep_list);
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
@@ -89,15 +92,23 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
+<<<<<<< HEAD
   if(ticks <= 0)
+=======
+  if(ticks < 0)
+>>>>>>> origin/master
     return;
 
   ASSERT(intr_get_level() == INTR_ON);
   enum intr_level previous_level = intr_disable();
 
-  thread_current()->sleep_ticks = ticks;
-                  
+  thread_current()->sleep_ticks = timer_ticks() + ticks;
+  list_insert_ordered(&sleep_list, 
+                      &thread_current()->elem,
+                      (list_less_func*) &compare_ticks,
+                      NULL);
   thread_block();
+
   intr_set_level(previous_level);
 }
 
@@ -171,6 +182,7 @@ timer_print_stats (void)
   printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
 
+<<<<<<< HEAD
 /* Attempt to unblock a thread if it has slept long enough. */
 static void
 try_wake_thread(struct thread *t, void *aux UNUSED)
@@ -185,13 +197,26 @@ try_wake_thread(struct thread *t, void *aux UNUSED)
     thread_unblock(t);
 }
 
+=======
+>>>>>>> origin/master
 /* Timer interrupt handler. */
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 { 
   ticks++;
   thread_tick();
-  thread_foreach((thread_action_func*) try_wake_thread, 0);
+  
+  struct list_elem *current;
+  for(current = list_begin(&sleep_list); current != list_end(&sleep_list);)
+  {
+    struct thread *t = list_entry(current, struct thread, elem);
+    if(t->sleep_ticks > ticks) 
+      break;
+
+    list_remove(current);
+    current = list_begin(&sleep_list);
+    thread_unblock(t);    
+  }
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
