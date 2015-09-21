@@ -97,14 +97,20 @@ needed/assumed them to be blocked, causing kernel panics.
 
 >> B2: Explain the data structure used to track priority donation.
 
-
 ---- ALGORITHMS ----
 
 >> B3: How do you ensure that the highest priority thread waiting for
 >> a lock, semaphore, or condition variable wakes up first?
 
+We keep the existing list of ready-to-run threads, ready_list, in order by thread 
+priority. This means that we can easily evaluate the current thread's priority
+and yield to a thread with a higher priority. This check is made on thread creation,
+when we change the priority of a thread, and when semaphores are released.
+
 >> B4: Describe the sequence of events when a call to lock_acquire()
 >> causes a priority donation.  How is nested donation handled?
+
+We currently do not have priority donation implemented.
 
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.
@@ -115,10 +121,16 @@ needed/assumed them to be blocked, causing kernel panics.
 >> how your implementation avoids it.  Can you use a lock to avoid
 >> this race?
 
+We disable interrupts to achieve atomicity in thread_set_priority().
+
 ---- RATIONALE ----
 
 >> B7: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
+
+While we have added no new structs or struct members, we did change existing list
+insertions to maintain an order based on either the priority of a thread or a 
+semaphore.
 
 
               ADVANCED SCHEDULER [EXTRA CREDIT]
