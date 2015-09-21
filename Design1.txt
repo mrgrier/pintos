@@ -95,7 +95,20 @@ needed/assumed them to be blocked, causing kernel panics.
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+In thread.h in struct thread we had the following structs members. 
+
+struct lock *blocking_lock; 
+  -This was a pointer to the lock that a specific thread was waiting on.
+struct list priority_donations;
+  -List of possible priorities that a thread could assume from potential donor threads.
+struct list_elem donation_elem;
+  -Element used to index this thread in lists.
+
 >> B2: Explain the data structure used to track priority donation.
+
+In the solution that we are submitting, priority donation is unfortunately not implemented.
+However, we did attempt this before we had to do a re-write because we could not track down where we
+were getting kernel panics. In our attempted implementation, the main data structure used to track priority donation was the list of priority_donations that allowed a thread to assume the highest priority from a potential donor thread. Sadly, when we believed we had this implemented we continually got kernel panics that we were unable to track down completely.
 
 ---- ALGORITHMS ----
 
@@ -110,10 +123,13 @@ when we change the priority of a thread, and when semaphores are released.
 >> B4: Describe the sequence of events when a call to lock_acquire()
 >> causes a priority donation.  How is nested donation handled?
 
-We currently do not have priority donation implemented.
+Once again, donation is not implemented in this solution, but in our attempt it was set up as follows.
+Our thread would update its blocking lock to the current lock. From there, the current thread would add its priority to the blocking lock's holder priotity_donations list. Finally, we were iteratively checking the lock hodler's priority with its priority donations list to see if we needed to re-assign the lock holders priority.
 
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.
+
+First the lock holder is set to NULL. Then we call sema up which unblocks the highest priority semaphore that was waiting on this thread. This new thread then acquires the lock.
 
 ---- SYNCHRONIZATION ----
 
@@ -121,7 +137,7 @@ We currently do not have priority donation implemented.
 >> how your implementation avoids it.  Can you use a lock to avoid
 >> this race?
 
-We disable interrupts to achieve atomicity in thread_set_priority().
+A possible race condition could be that if we are assigning a thread a priority and a new thread is created before we can set that threads priority, then that new thread would receive the priority that we were intending the other thread to recieve. The way we avoid this in our implementation is that we disable interrupts to achieve atomicity in thread_set_priority(). Yes, you could use a lock to avoid this race.
 
 ---- RATIONALE ----
 
